@@ -82,12 +82,12 @@ describe("MutableAsyncFlowImpl", () => {
         });
     });
 
-    describe("getDataSnapshot", () => {
+    describe("asPromise", () => {
         it("should resolve immediately when state is success", async () => {
             flow.emit({ status: "success", data: 42 });
 
             let result: unknown;
-            void flow.getDataSnapshot().then((data) => {
+            void flow.asPromise().then((data) => {
                 result = data;
             });
 
@@ -101,7 +101,7 @@ describe("MutableAsyncFlowImpl", () => {
             flow.emit({ status: "error", error });
 
             let result: unknown;
-            void flow.getDataSnapshot().then(
+            void flow.asPromise().then(
                 () => {
                     result = "resolved";
                 },
@@ -116,7 +116,7 @@ describe("MutableAsyncFlowImpl", () => {
         });
 
         it("should wait for success state when initially pending", async () => {
-            const dataPromise = flow.getDataSnapshot();
+            const dataPromise = flow.asPromise();
 
             // Emit success after a short delay
             setTimeout(() => {
@@ -128,7 +128,7 @@ describe("MutableAsyncFlowImpl", () => {
         });
 
         it("should wait for error state when initially pending", async () => {
-            const dataPromise = flow.getDataSnapshot();
+            const dataPromise = flow.asPromise();
             const error = new Error("Async error");
 
             // Emit error after a short delay
@@ -140,8 +140,8 @@ describe("MutableAsyncFlowImpl", () => {
         });
 
         it("should handle multiple pending -> success transitions", async () => {
-            const promise1 = flow.getDataSnapshot();
-            const promise2 = flow.getDataSnapshot();
+            const promise1 = flow.asPromise();
+            const promise2 = flow.asPromise();
 
             flow.emit({ status: "success", data: 456 });
 
@@ -151,8 +151,8 @@ describe("MutableAsyncFlowImpl", () => {
         });
 
         it("should handle multiple pending -> error transitions", async () => {
-            const promise1 = flow.getDataSnapshot();
-            const promise2 = flow.getDataSnapshot();
+            const promise1 = flow.asPromise();
+            const promise2 = flow.asPromise();
             const error = new Error("Multi error");
 
             flow.emit({ status: "error", error });
@@ -161,8 +161,8 @@ describe("MutableAsyncFlowImpl", () => {
         });
 
         it("should dedupe promises with multiple pending -> success transitions", async () => {
-            const promise1 = flow.getDataSnapshot();
-            const promise2 = flow.getDataSnapshot();
+            const promise1 = flow.asPromise();
+            const promise2 = flow.asPromise();
 
             expect(promise1).toBe(promise2);
 
@@ -173,9 +173,9 @@ describe("MutableAsyncFlowImpl", () => {
             expect(result2).toBe(456);
         });
 
-        it("should return new promise after success transition", async () => {
-            const promise1 = flow.getDataSnapshot();
-            const promise2 = flow.getDataSnapshot();
+        it("should return same promise after success transition until pending state", async () => {
+            const promise1 = flow.asPromise();
+            const promise2 = flow.asPromise();
 
             expect(promise1).toBe(promise2);
 
@@ -185,13 +185,59 @@ describe("MutableAsyncFlowImpl", () => {
             expect(result1).toBe(456);
             expect(result2).toBe(456);
 
-            const promise3 = flow.getDataSnapshot();
-            expect(promise1).not.toBe(promise3);
+            const promise3 = flow.asPromise();
+            expect(promise1).toBe(promise3);
+            await expect(promise3).resolves.toBe(456);
+
+            flow.emit({ status: "pending", data: 456 });
+            const promise4 = flow.asPromise();
+            expect(promise4).not.toBe(promise3);
+        });
+
+        it("should return same promise if the state changes from pending to pending", async () => {
+            flow.emit({ status: "pending" });
+            const promise1 = flow.asPromise();
+
+            flow.emit({ status: "pending" });
+            const promise2 = flow.asPromise();
+
+            flow.emit({ status: "pending", data: 123 });
+            const promise3 = flow.asPromise();
+
+            expect(promise1).toBe(promise2);
+            expect(promise1).toBe(promise3);
+
+            flow.emit({ status: "success", data: 456 });
+            await expect(promise1).resolves.toBe(456);
+            await expect(promise2).resolves.toBe(456);
             await expect(promise3).resolves.toBe(456);
         });
 
+        it("should return new promise for new success transition", async () => {
+            const source = createAsyncFlow<number>({ status: "success", data: 1 });
+            const promise1 = source.asPromise();
+            await expect(promise1).resolves.toBe(1);
+
+            source.emit({ status: "success", data: 2 });
+            const promise2 = source.asPromise();
+            expect(promise2).not.toBe(promise1);
+            await expect(promise2).resolves.toBe(2);
+        });
+
+        it("should return new promise for new error transition", async () => {
+            const source = createAsyncFlow<number>({ status: "success", data: 1 });
+            const promise1 = source.asPromise();
+            await expect(promise1).resolves.toBe(1);
+
+            const error = new Error();
+            source.emit({ status: "error", error });
+            const promise2 = source.asPromise();
+            expect(promise2).not.toBe(promise1);
+            await expect(promise2).rejects.toBe(error);
+        });
+
         it("should ignore intermediate pending states", async () => {
-            const dataPromise = flow.getDataSnapshot();
+            const dataPromise = flow.asPromise();
 
             setTimeout(() => {
                 flow.emit({ status: "pending" }); // Should be ignored
@@ -205,12 +251,12 @@ describe("MutableAsyncFlowImpl", () => {
 
         it("should work with different data types", async () => {
             const stringFlow = createAsyncFlow<string>({ status: "success", data: "test" });
-            const stringResult = await stringFlow.getDataSnapshot();
+            const stringResult = await stringFlow.asPromise();
             expect(stringResult).toBe("test");
             expectTypeOf(stringResult).toEqualTypeOf<string>();
 
             const objectFlow = createAsyncFlow<{ id: number }>({ status: "success", data: { id: 1 } });
-            const objectResult = await objectFlow.getDataSnapshot();
+            const objectResult = await objectFlow.asPromise();
             expect(objectResult).toEqual({ id: 1 });
             expectTypeOf(objectResult).toEqualTypeOf<{ id: number }>();
         });
@@ -219,7 +265,7 @@ describe("MutableAsyncFlowImpl", () => {
             const customError = { code: 404, message: "Not found" };
             flow.emit({ status: "error", error: customError });
 
-            await expect(flow.getDataSnapshot()).rejects.toBe(customError);
+            await expect(flow.asPromise()).rejects.toBe(customError);
         });
     });
 
@@ -508,10 +554,10 @@ describe("MutableAsyncFlowImpl", () => {
             expectTypeOf(readOnlyFlow).toEqualTypeOf<AsyncFlow<number>>();
             expect(readOnlyFlow).toHaveProperty("subscribe");
             expect(readOnlyFlow).toHaveProperty("getSnapshot");
-            expect(readOnlyFlow).toHaveProperty("getDataSnapshot");
+            expect(readOnlyFlow).toHaveProperty("asPromise");
             expect(typeof readOnlyFlow.subscribe).toBe("function");
             expect(typeof readOnlyFlow.getSnapshot).toBe("function");
-            expect(typeof readOnlyFlow.getDataSnapshot).toBe("function");
+            expect(typeof readOnlyFlow.asPromise).toBe("function");
         });
 
         it("should provide read-only access to the same data", () => {
@@ -548,11 +594,11 @@ describe("MutableAsyncFlowImpl", () => {
             expect(listener).toHaveBeenCalledTimes(1);
         });
 
-        it("should support getDataSnapshot through the read-only interface", async () => {
+        it("should support asPromise through the read-only interface", async () => {
             const readOnlyFlow = flow.asFlow();
 
             flow.emit({ status: "success", data: 999 });
-            const result = await readOnlyFlow.getDataSnapshot();
+            const result = await readOnlyFlow.asPromise();
 
             expect(result).toBe(999);
         });
@@ -650,7 +696,7 @@ describe("MutableAsyncFlowImpl", () => {
             };
 
             await simulateAsyncOperation();
-            const userData = await userFlow.getDataSnapshot();
+            const userData = await userFlow.asPromise();
 
             expect(states).toEqual(["pending", "success"]);
             expect(userData).toEqual({ id: 1, name: "John" });
@@ -676,12 +722,12 @@ describe("MutableAsyncFlowImpl", () => {
 
             await simulateFailedOperation();
 
-            await expect(apiFlow.getDataSnapshot()).rejects.toThrow("Network error");
+            await expect(apiFlow.asPromise()).rejects.toThrow("Network error");
             expect(states).toEqual(["pending", "error"]);
         });
 
-        it("should support multiple concurrent getDataSnapshot calls", async () => {
-            const promises = [flow.getDataSnapshot(), flow.getDataSnapshot(), flow.getDataSnapshot()];
+        it("should support multiple concurrent asPromise calls", async () => {
+            const promises = [flow.asPromise(), flow.asPromise(), flow.asPromise()];
 
             setTimeout(() => {
                 flow.emit({ status: "success", data: 555 });

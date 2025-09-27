@@ -67,11 +67,15 @@ export class MutableFlowImpl<Data> implements MutableFlow<Data> {
         const subscription: Subscription = {
             listener,
             unsubscribe: () => {
-                this.subscriptions.delete(subscription);
+                const subs = new Set(this.subscriptions);
+                subs.delete(subscription);
+                this.subscriptions = subs;
             },
         };
 
-        this.subscriptions.add(subscription);
+        const subs = new Set(this.subscriptions);
+        subs.add(subscription);
+        this.subscriptions = subs;
 
         return subscription;
     }

@@ -16,9 +16,50 @@ export class MutableAsyncFlowImpl<Data>
     implements MutableAsyncFlow<Data>
 {
     /**
-     * Cached promise returned from the getDataSnapshot()
+     * Cached promise returned from the asPromise()
      */
-    private dataPromise: Promise<Data> | null = null;
+    private promise: Promise<Data> | null = null;
+
+    /**
+     * Emits a new async flow state, notifying all subscribers and managing the internal promise cache.
+     *
+     * @param value - The new async flow state to emit. Can be:
+     *   - `{ status: "pending" }` - Indicates the async operation is in progress
+     *   - `{ status: "success", data: Data }` - Indicates successful completion with data
+     *   - `{ status: "error", error: unknown }` - Indicates failure with an error
+     *
+     * @example
+     * Basic state transitions:
+     * ```typescript
+     * const asyncFlow = createAsyncFlow<string>({ status: "pending" });
+     *
+     * // Start an async operation
+     * asyncFlow.emit({ status: "pending" });
+     *
+     * // Complete successfully
+     * asyncFlow.emit({ status: "success", data: "Hello World" });
+     *
+     * // Or handle an error
+     * asyncFlow.emit({ status: "error", error: new Error("Something went wrong") });
+     * ```
+     */
+    public emit(value: AsyncFlowState<Data>): void {
+        switch (value.status) {
+            case "pending":
+                if (this.value.status !== "pending") {
+                    this.promise = null;
+                }
+                break;
+            case "success":
+            case "error":
+                if (this.value.status !== "pending") {
+                    this.promise = null;
+                }
+                break;
+        }
+
+        super.emit(value);
+    }
 
     /**
      * Returns a promise that resolves with the data when the async flow reaches a success state,
@@ -34,7 +75,7 @@ export class MutableAsyncFlowImpl<Data>
      * const asyncFlow = createAsyncFlow<string>({ status: "pending" });
      *
      * // This will wait for the flow to resolve
-     * asyncFlow.getDataSnapshot()
+     * asyncFlow.asPromise()
      *   .then(data => console.log('Success:', data))
      *   .catch(error => console.error('Error:', error));
      *
@@ -42,18 +83,16 @@ export class MutableAsyncFlowImpl<Data>
      * asyncFlow.emit({ status: "success", data: "Hello World" });
      * ```
      */
-    public getDataSnapshot(): Promise<Data> {
-        this.dataPromise ??= new Promise<Data>((resolve, reject) => {
+    public asPromise(): Promise<Data> {
+        this.promise ??= new Promise<Data>((resolve, reject) => {
             const state = this.getSnapshot();
 
             if (state.status === "success") {
-                this.dataPromise = null;
                 resolve(state.data);
                 return;
             }
 
             if (state.status === "error") {
-                this.dataPromise = null;
                 // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Intentionally preserve the original error to avoid transformations that could break user error handling
                 reject(state.error);
                 return;
@@ -70,17 +109,16 @@ export class MutableAsyncFlowImpl<Data>
                 subscription.unsubscribe();
 
                 if (state.status === "error") {
-                    this.dataPromise = null;
                     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Intentionally preserve the original error to avoid transformations that could break user error handling
                     reject(state.error);
                     return;
                 }
 
-                this.dataPromise = null;
                 resolve(state.data);
             });
         });
-        return this.dataPromise;
+
+        return this.promise;
     }
 
     /**
@@ -174,9 +212,9 @@ export class MutableAsyncFlowImpl<Data>
  * }
  *
  * // Wait for the data to be available
- * const data = await apiFlow.getDataSnapshot();
+ * const data = await apiFlow.asPromise();
  * ```
  */
-export function createAsyncFlow<Data>(initialValue: AsyncFlowState<Data>) {
+export function createAsyncFlow<Data>(initialValue: AsyncFlowState<Data>): MutableAsyncFlow<Data> {
     return new MutableAsyncFlowImpl(initialValue);
 }

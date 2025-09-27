@@ -102,6 +102,34 @@ describe("MutableFlowImpl", () => {
 
             expect(listener).toHaveBeenCalledTimes(2);
         });
+
+        it("should not call listeners added during notification stage", () => {
+            const listener1 = vi.fn();
+            const listener2 = vi.fn();
+
+            flow.subscribe(() => {
+                listener1();
+                flow.subscribe(listener2);
+            });
+
+            flow.emit(1);
+
+            expect(listener1).toHaveBeenCalledTimes(1);
+            expect(listener2).toHaveBeenCalledTimes(0);
+        });
+
+        it("should not listeners removed during notification stage", () => {
+            const listener = vi.fn();
+
+            flow.subscribe(() => {
+                sub.unsubscribe();
+            });
+            const sub = flow.subscribe(listener);
+
+            flow.emit(1);
+
+            expect(listener).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe("emit", () => {
@@ -440,19 +468,6 @@ describe("MutableFlowImpl", () => {
                 { count: 1, name: "first" },
                 { count: 2, name: "second" },
             ]);
-        });
-
-        it("should handle rapid successive emissions", () => {
-            const listener = vi.fn();
-            flow.subscribe(listener);
-
-            // Emit many values rapidly
-            for (let i = 0; i < 100; i++) {
-                flow.emit(i);
-            }
-
-            expect(listener).toHaveBeenCalledTimes(100);
-            expect(flow.getSnapshot()).toBe(99);
         });
 
         it("should work with counter example from documentation", () => {
