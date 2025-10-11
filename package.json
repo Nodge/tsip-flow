@@ -1,6 +1,6 @@
 {
     "name": "@tsip/flow",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "description": "TypeScript implementation of reactive flows based on TypeScript Interface Proposals. Provides synchronous and asynchronous flow primitives for building reactive data flows.",
     "keywords": [
         "typescript",
