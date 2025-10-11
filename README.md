@@ -1,15 +1,13 @@
-# Flow Implementation Compatible With TypeScript Interface Proposals
+# @tsip/flow - Reactive Data Flows for TypeScript
 
-A TypeScript implementation of reactive flows based on the TypeScript Interface Proposals. This library provides both synchronous and asynchronous flow primitives for building reactive applications.
+A TypeScript implementation of reactive flows based on the [TypeScript Interface Proposals (TSIP)](https://github.com/Nodge/ts-interface-proposals). This library provides both synchronous and asynchronous flow primitives for building reactive applications.
 
 ## Features
 
-- **TSIP Compliant**: Implements the TypeScript Interface Proposals for flows
-- **Synchronous Flows**: Create reactive values that can be subscribed to and updated
-- **Asynchronous Flows**: Handle async operations with pending, success, and error states
-- **TypeScript First**: Full type safety with comprehensive TypeScript support
-- **Lightweight**: Zero dependencies and small bundle size (only 490B minified+gzipped)
-- **Framework Agnostic**: Works with any JavaScript framework or vanilla JS
+- **Standards-Based**: Built on the TypeScript Interface Proposals for seamless compatibility with TSIP-compatible libraries
+- **Type-Safe**: Full TypeScript support with comprehensive type inference
+- **Lightweight**: Zero dependencies and only 490B minified+gzipped
+- **Universal**: Works in Node.js, browsers, and any JavaScript environment
 
 ## Installation
 
@@ -19,6 +17,23 @@ npm install @tsip/flow
 yarn add @tsip/flow
 # or
 pnpm add @tsip/flow
+```
+
+## Quick Start
+
+```typescript
+import { createFlow } from "@tsip/flow";
+
+// Create a reactive counter
+const counter = createFlow(0);
+
+// Subscribe to changes
+counter.subscribe(() => {
+    console.log("Count:", counter.getSnapshot());
+});
+
+// Update the value
+counter.emit(counter.getSnapshot() + 1); // Logs: "Count: 1"
 ```
 
 ## API
@@ -72,6 +87,10 @@ fetchUser()
 // Or wait for the data directly
 const user = await userFlow.getDataSnapshot();
 ```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
