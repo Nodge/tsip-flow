@@ -6,7 +6,7 @@ A TypeScript implementation of reactive flows based on the [TypeScript Interface
 
 - **Standards-Based**: Built on the TypeScript Interface Proposals for seamless compatibility with TSIP-compatible libraries
 - **Type-Safe**: Full TypeScript support with comprehensive type inference
-- **Lightweight**: Zero dependencies and only 490B minified+gzipped
+- **Lightweight**: Zero dependencies and only 674B minified+gzipped
 - **Universal**: Works in Node.js, browsers, and any JavaScript environment
 
 ## Installation
@@ -85,7 +85,7 @@ fetchUser()
     .catch((error) => userFlow.emit({ status: "error", error }));
 
 // Or wait for the data directly
-const user = await userFlow.getDataSnapshot();
+const user = await userFlow.asPromise();
 ```
 
 ## Contributing
