@@ -1,5 +1,11 @@
 # @tsip/flow
 
+## 0.1.1
+
+### Patch Changes
+
+- [#2](https://github.com/Nodge/tsip-flow/pull/2) [`25c6319`](https://github.com/Nodge/tsip-flow/commit/25c63195e4a814e26f10e58e24de76bcda908496) Thanks [@Nodge](https://github.com/Nodge)! - Fix TypeScript declaration file generation by enabling DTS resolution in tsup config. This removes the dependency on the `@tsip/types` package.
+
 ## 0.1.0
 
 ### Minor Changes
