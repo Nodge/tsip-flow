@@ -1,5 +1,12 @@
 # @tsip/flow
 
+## 0.2.0
+
+### Minor Changes
+
+- [#5](https://github.com/Nodge/tsip-flow/pull/5) [`f1beda4`](https://github.com/Nodge/tsip-flow/commit/f1beda4b2b190d432d910b6f3033d31df3adb672) Thanks [@Nodge](https://github.com/Nodge)! - - Integrate Flow spec compatibility tests.
+  - Skip notifying subscribers when a mutable flow re-emits the current value.
+
 ## 0.1.1
 
 ### Patch Changes
