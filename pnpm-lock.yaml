@@ -18,8 +18,8 @@ importers:
         specifier: 9.36.0
         version: 9.36.0
       '@tsip/types':
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: 0.3.0
+        version: 0.3.0
       '@types/eslint':
         specifier: 9.6.1
         version: 9.6.1
@@ -491,8 +491,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@tsip/types@0.2.0':
-    resolution: {integrity: sha512-Pxi/cKgiNo0aW8yFUWvctmCqTGj4Qb1fb24WYQVAneO+Ve8Am06ZjKsVsWlvHxB5dX0KiliKreKRerAoZOVxJQ==}
+  '@tsip/types@0.3.0':
+    resolution: {integrity: sha512-+JCdrTvMVhkovQ5VS9LyEC3VuTF9v57gprRe9HMPLMeZx8Y8UqXkAgBr8QdejaZJtSdHn0L6WnDx/dX/IVa6hw==}
     engines: {node: '>=18'}
 
   '@types/chai@5.2.2':
@@ -2054,7 +2054,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.52.3':
     optional: true
 
-  '@tsip/types@0.2.0': {}
+  '@tsip/types@0.3.0': {}
 
   '@types/chai@5.2.2':
     dependencies:
