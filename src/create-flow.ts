@@ -101,6 +101,10 @@ export class MutableFlowImpl<Data> implements MutableFlow<Data> {
      * ```
      */
     public emit(value: Data): void {
+        if (this.value === value) {
+            return;
+        }
+
         this.value = value;
 
         const errors: unknown[] = [];
